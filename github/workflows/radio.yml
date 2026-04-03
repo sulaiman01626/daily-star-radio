@@ -1,0 +1,46 @@
+name: 📻 Hourly News Radio
+
+on:
+  schedule:
+    - cron: "0 * * * *"   # প্রতি ঘণ্টায় চলবে (UTC)
+  workflow_dispatch:        # হাতেও চালানো যাবে
+
+permissions:
+  contents: write           # GitHub Pages-এ পুশ করার অনুমতি
+
+jobs:
+  build-radio:
+    runs-on: ubuntu-latest
+
+    steps:
+      # ১. রিপো চেকআউট
+      - name: ⬇️ Checkout Repository
+        uses: actions/checkout@v4
+
+      # ২. Python সেটআপ
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # ৩. লাইব্রেরি ইনস্টল
+      - name: 📦 Install Dependencies
+        run: |
+          pip install requests beautifulsoup4 gTTS pydub
+
+      # ৪. ffmpeg ইনস্টল (pydub এর জন্য)
+      - name: 🔧 Install ffmpeg
+        run: sudo apt-get install -y ffmpeg
+
+      # ৫. নিউজ → MP3 চালাও
+      - name: 🎙️ Generate News Audio
+        run: python news_radio.py
+
+      # ৬. GitHub Pages-এ পুশ করো
+      - name: 🚀 Deploy to GitHub Pages
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add audio/ playlist.json
+          git diff --staged --quiet || git commit -m "🎙️ Hourly news update - $(date -u '+%Y-%m-%d %H:%M UTC')"
+          git push
